@@ -1,0 +1,17 @@
+PackratFormat: 1.4
+PackratVersion: 0.4.0.10
+RVersion: 3.1.1
+Repos: CRAN=http://watson.nci.nih.gov/cran_mirror/,
+    BioCsoft=http://bioconductor.org/packages/2.14/bioc,
+    BioCann=http://bioconductor.org/packages/2.14/data/annotation,
+    BioCexp=http://bioconductor.org/packages/2.14/data/experiment,
+    BioCextra=http://bioconductor.org/packages/2.14/extra
+
+Package: packrat
+Source: github
+Version: 0.4.0.10
+GithubRepo: packrat
+GithubUsername: rstudio
+GithubRef: master
+GithubSha1: 496452ab5271a76dfdc8c369f5be4b356fe859c1
+Hash: 496452ab5271a76dfdc8c369f5be4b356fe859c1
