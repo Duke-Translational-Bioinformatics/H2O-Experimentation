@@ -31,6 +31,11 @@ vdxExpDF <- vdxExpDF[ , sampleGenes]
 
 vdxExpDF <- data.frame(patients = rownames(vdxExpDF), er_status = vdxMetaDF[rownames(vdxExpDF), 'er'], vdxExpDF)
 
+# Find NA for ER status
+naInd <- grep('TRUE', is.na(vdxExpDF$er_status))
+
+vdxExpDF <- vdxExpDF[-naInd, ]
+
 ## DIVIDE DATA INTO TRAIN AND TEST SETS
 set.seed(140827)
 trainIDs <- sample(rownames(vdxExpDF), size = 0.66*nrow(vdxExpDF))
@@ -56,15 +61,29 @@ rfModel <- h2o.randomForest(x = 3:ncol(trainBC),
 ## PREDICT ON TEST SET
 yHatTest <- h2o.predict(rfModel, testBC)
 yHatTestDF <- as.data.frame(yHatTest)
-colnames(yHatTestDF) <- c('ER_Status', 'ER_Neg', 'ER_Prob')
+colnames(yHatTestDF) <- c('ER_Call', 'ER_Neg', 'ER_Prob')
+yHatTestDF <- data.frame('ER_True' = testData[ , 'er_status'], yHatTestDF)
 
-ggplot(yHatTestDF, aes(factor(ER_Status), ER_Prob)) +
-  geom_boxplot(aes(fill = factor(ER_Status)), alpha = 0.4) +
-  geom_jitter(aes(colour = factor(ER_Status)), size = 4)
+ggplot(yHatTestDF, aes(factor(ER_True), ER_Prob)) +
+  geom_boxplot(aes(fill = factor(ER_True)), alpha = 0.4) +
+  geom_jitter(aes(colour = factor(ER_True)), size = 4) +
+  ylim(c(0.0, 1.0)) +
+  ggtitle('Distributed Random Forest ER Predictions on Held-Out Test Data')
 
-rfPerformance <- h2o.performance(data = yHatTest[ , 3], reference = yHatTest[ , 1])
+rfPerformance <- h2o.performance(data = yHatTest[ , 3], reference = testBC[ , 2])
 
 ## BUILD A DEEP LEARNING MODEL
+# dlModel <- h2o.deeplearning(x = 3:ncol(trainBC),
+#                             y = 2,
+#                             data = trainBC,
+#                             activation = 'TanhWithDropout',
+#                             input_dropout_ratio = 0,
+#                             hidden_dropout_ratios = c(0.7, 0.7, 0.7),
+#                             hidden = c(50, 50, 50),
+#                             epochs = 500,
+#                             classification = TRUE,
+#                             balance_classes = TRUE)
+
 dlModel <- h2o.deeplearning(x = 3:ncol(trainBC),
                             y = 2,
                             data = trainBC,
@@ -74,12 +93,15 @@ dlModel <- h2o.deeplearning(x = 3:ncol(trainBC),
 ## PREDICT ON TEST SET
 dlYHatTest <- h2o.predict(dlModel, testBC)
 dlYHatTestDF <- as.data.frame(dlYHatTest)  
-colnames(dlYHatTestDF) <- c('ER_Status', 'ER_Neg', 'ER_Prob')
+colnames(dlYHatTestDF) <- c('ER_Call', 'ER_Neg', 'ER_Prob')
+dlYHatTestDF <- data.frame('ER_True' = testData[ , 'er_status'], dlYHatTestDF)
 
-ggplot(dlYHatTestDF, aes(factor(ER_Status), ER_Prob)) +
-  geom_boxplot(aes(fill = factor(ER_Status)), alpha = 0.4) +
-  geom_jitter(aes(colour = factor(ER_Status)), size = 4)
+ggplot(dlYHatTestDF, aes(factor(ER_True), ER_Prob)) +
+  geom_boxplot(aes(fill = factor(ER_True)), alpha = 0.4) +
+  geom_jitter(aes(colour = factor(ER_True)), size = 4) +
+  ylim(c(0.0, 1.0)) +
+  ggtitle('Regularized Deep Learning ER Predictions on Held-Out Test Data')
 
-dlPerformance <- h2o.performance(data = dlYHatTest[ , 3], reference = dlYHatTest[ , 1])
+dlPerformance <- h2o.performance(data = dlYHatTest[ , 3], reference = testBC[ , 2])
 
 
